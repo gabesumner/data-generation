@@ -36,6 +36,10 @@
         helper.createAccounts(component, helper, 50);
     },
 
+    createAccounts100 : function(component, event, helper) {
+        helper.createAccounts(component, helper, 100);
+    },    
+
     createJake : function(component, event, helper) {
         console.log('CreateJake');
         var action = component.get("c.CreateJake");
