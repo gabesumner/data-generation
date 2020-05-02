@@ -12,7 +12,7 @@
         <lightning:card title="GENERATE" iconName="utility:adduser">
             <div class="slds-p-horizontal_medium">
                 <div class="slds-p-bottom_x-small">
-                    <ui:inputNumber label="How many accounts do wish to generate?" class="field" value="{!v.numberOfAccounts}" size="8" />
+                    <ui:inputNumber label="How many accounts do you wish to generate?" class="field" value="{!v.numberOfAccounts}" size="8" />
                 </div>
                 <div>
                     <lightning:button label="Generate Accounts with Activity" iconName="utility:adduser" onclick="{!c.createAccounts}" />
