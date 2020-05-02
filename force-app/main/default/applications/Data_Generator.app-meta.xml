@@ -12,7 +12,7 @@
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <label>Data Generator</label>
     <navType>Standard</navType>
-    <tabs>Data_Generation</tabs>
+    <tabs>Data_Generator</tabs>
     <uiType>Lightning</uiType>
     <utilityBar>Data_Generator_UtilityBar</utilityBar>
 </CustomApplication>

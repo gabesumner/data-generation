@@ -45,9 +45,9 @@
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>DataGeneration</label>
+    <label>DataGenerator</label>
     <tabSettings>
-        <tab>Data_Generation</tab>
+        <tab>Data_Generator</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>
