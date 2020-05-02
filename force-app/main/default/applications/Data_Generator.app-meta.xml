@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#5AB0D3</headerColor>
+        <logo>datagenerator</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
+    </brand>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <label>Data Generator</label>
+    <navType>Standard</navType>
+    <tabs>Data_Generation</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>Data_Generator_UtilityBar</utilityBar>
+</CustomApplication>

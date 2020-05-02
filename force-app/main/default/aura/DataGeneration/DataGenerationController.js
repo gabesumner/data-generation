@@ -1,77 +1,32 @@
 ({
     resetAccounts : function(component, event, helper) {
+        helper.addToLog(component, "Resetting accounts... (be patient)");
         var action = component.get("c.DeleteAll");
         action.setCallback(this, function(response) {
             var state = response.getState();
             if (state === "SUCCESS") {
-                console.log("From server: " + response.getReturnValue());
+                helper.addToLog(component, "All accounts and activities have been deleted.");
             }
             else if (state === "INCOMPLETE") {
-                console.log("INCOMPLETE");
+                helper.addToLog(component, "Status:Incomplete. Something unexpected happened.");
             }
             else if (state === "ERROR") {
                 var errors = response.getError();
                 if (errors) {
                     if (errors[0] && errors[0].message) {
-                        console.log("Error message: " + errors[0].message);
+                        helper.addToLog(component, "Error: " + errors[0].message);
                     }
                 } else {
-                    console.log("Unknown error");
+                    helper.addToLog(component, "Unknown error");
                 }
             }
         });
         $A.enqueueAction(action);
-        helper.showSuccess('Accounts deleted');
-    },
-    
-	createAccount : function(component, event, helper) {
-        helper.createAccounts(component, helper, 1);
-	},
-    
-    createAccounts10 : function(component, event, helper) {
-        helper.createAccounts(component, helper, 10);
-    },
-    
-    createAccounts50 : function(component, event, helper) {
-        helper.createAccounts(component, helper, 50);
     },
 
-    createAccounts100 : function(component, event, helper) {
-        helper.createAccounts(component, helper, 100);
-    },    
-
-    createJake : function(component, event, helper) {
-        console.log('CreateJake');
-        var action = component.get("c.CreateJake");
-        action.setCallback(this, function(response) {
-            var state = response.getState();
-            if (state === "SUCCESS") {
-                console.log("Created accounts.");
-            }
-            else if (state === "INCOMPLETE") {
-                console.log("INCOMPLETE");
-            }
-                else if (state === "ERROR") {
-                    var errors = response.getError();
-                    if (errors) {
-                        if (errors[0] && errors[0].message) {
-                            console.log("Error message: " + errors[0].message);
-                        }
-                    } else {
-                        console.log("Unknown error");
-                    }
-                }            
-        });
-        $A.enqueueAction(action);
-        helper.showSuccess('Jake generated');
-
-    },
-
-    createReema : function(component, event, helper) {
-        console.log('CreateReema');
-        var action = component.get("c.CreateReema");
-        action.setCallback(this, function(response) {});
-        $A.enqueueAction(action);
-        helper.showSuccess('Reema generated');
-    }    
+    createAccounts: function(component, event, helper) {
+        var accountsRequested = component.get("v.numberOfAccounts");
+        helper.addToLog(component, "Generating accounts... (be patient)");
+        helper.generateAccounts(component, helper, 0, accountsRequested);
+    }
 })
