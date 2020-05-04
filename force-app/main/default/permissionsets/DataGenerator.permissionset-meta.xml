@@ -46,6 +46,15 @@
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>DataGenerator</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Data_Generator_Event__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
     <tabSettings>
         <tab>Data_Generator</tab>
         <visibility>Visible</visibility>
