@@ -12,6 +12,9 @@
 # LWC Jest coverage reports
 coverage/
 
+# VS Code
+.vscode
+
 # Logs
 logs
 *.log

@@ -1,0 +1,9 @@
+.wrapper {
+    background-color: white;    
+}
+textarea {
+    width: 100%;
+    min-height: 200px;
+    background-color: #F9F9F9;
+    font-family: monospace;
+}
