@@ -23,8 +23,16 @@
                             <lightning-input type="number" label="Maximum number of contacts to generate per account?" value={maximumContactsToGenerate} onchange={handleMaximumContactsToGenerate}></lightning-input>
                         </div>                        
                     </template>
+                    <template if:true={isCase}>
+                        <div class="slds-p-bottom_x-small">
+                            <lightning-input type="number" label="Minimum number of cases to generate per contact?" value={minimumCasesToGenerate} onchange={handleMinimumCasesToGenerate}></lightning-input>
+                        </div>
+                        <div class="slds-p-bottom_x-small">
+                            <lightning-input type="number" label="Maximum number of cases to generate per contact?" value={maximumCasesToGenerate} onchange={handleMaximumCasesToGenerate}></lightning-input>
+                        </div>                        
+                    </template>                    
                     <div class="slds-p-top_small">
-                        <span class="slds-p-right_x-small"><lightning-button label="Generate Records" icon-name="utility:database" onclick={generateRecords}></lightning-button></span>
+                        <span class="slds-p-right_x-small"><lightning-button label="Generate Records" icon-name="utility:database" onclick={handleGenerateRecords}></lightning-button></span>
                         <lightning-button label="Delete All Records" icon-name="utility:warning" onclick={deleteAll}></lightning-button>
                     </div>
                 </div>

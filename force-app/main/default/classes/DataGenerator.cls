@@ -64,9 +64,26 @@ public with sharing class DataGenerator {
     }
 
     @AuraEnabled
-    public static List<Case> GenerateCasesForContacts(List<Account> contacts, Integer minimumToGenerate, Integer maximumToGenerate) {
+    public static void generateCasesForContacts(Integer minimumToGenerate, Integer maximumToGenerate) {
+        publishEvent('Generating ' + minimumToGenerate + '-' + maximumToGenerate + ' case records per contact...');
+        
         List<Case> cases = new List<Case>();
-        return cases;
+        List<Contact> contacts = [SELECT Id, AccountId FROM Contact];
+
+        for (Integer contactCount = 0; contactCount < contacts.size(); contactCount++) {
+            Integer numberToGenerate = getRandomInt(minimumToGenerate, maximumToGenerate);
+            for (Integer caseCount = 0; caseCount < numberToGenerate; caseCount++) {
+                cases.add(createCase(contacts[contactCount]));
+                if (cases.size() >= 100) {
+                    insert cases;
+                    publishEvent('Processed ' + String.valueOf(contactCount+1) + ' of ' + contacts.size() + ' contacts.');
+                    contacts.clear();
+                }
+            }
+        }
+
+        insert(cases);
+        publishEvent('JOB FINISHED: ' + minimumToGenerate + '-' + maximumToGenerate + ' case records were generated for ' + contacts.size() + ' contacts.');
     }
 
     @AuraEnabled

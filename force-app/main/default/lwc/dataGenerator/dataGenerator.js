@@ -2,6 +2,7 @@ import { LightningElement, track, wire } from 'lwc';
 import { subscribe, unsubscribe, onError, setDebugFlag, isEmpEnabled } from 'lightning/empApi'
 import callGenerateAccounts from '@salesforce/apex/DataGenerator.generateAccounts';
 import callGenerateContactsForAccounts from '@salesforce/apex/DataGenerator.generateContactsForAccounts';
+import callGenerateCasesForContacts from '@salesforce/apex/DataGenerator.generateCasesForContacts';
 import callDeleteAll from '@salesforce/apex/DataGenerator.DeleteAll';
 
 export default class DataGenerator extends LightningElement {
@@ -12,6 +13,8 @@ export default class DataGenerator extends LightningElement {
     @track accountType = 'consumer';
     @track minimumContactsToGenerate = 1;
     @track maximumContactsToGenerate = 5;
+    @track minimumCasesToGenerate = 1;
+    @track maximumCasesToGenerate = 5;    
     @track openmodel = false;
     @track log = ""
     error;
@@ -53,7 +56,15 @@ export default class DataGenerator extends LightningElement {
         this.maximumContactsToGenerate = event.detail.value;
     }
 
-    generateRecords(event) {
+    handleMinimumCasesToGenerate(event) {
+        this.minimumCasesToGenerate = event.detail.value;
+    }
+
+    handleMaximumCasesToGenerate(event) {
+        this.maximumCasesToGenerate = event.detail.value;
+    }    
+
+    handleGenerateRecords(event) {
         this.openmodal();
         this.addToLog('JOB STARTED (be patient)');
 
@@ -65,6 +76,7 @@ export default class DataGenerator extends LightningElement {
                 this.generateContactsForAccounts();
                 break;
             case 'case':
+                this.generateCasesForContacts();
                 break;
         }
 
@@ -96,6 +108,20 @@ export default class DataGenerator extends LightningElement {
             console.log('Error: ' + JSON.stringify(error));
             this.error = error;
         });
+    }
+
+    generateCasesForContacts() {
+        callGenerateCasesForContacts({
+            minimumToGenerate: this.minimumContactsToGenerate,
+            maximumToGenerate: this.maximumContactsToGenerate
+        })
+        .then(result => {
+            console.log('Results: ' + JSON.stringify(result));
+        })
+        .catch(error => {
+            console.log('Error: ' + JSON.stringify(error));
+            this.error = error;
+        });        
     }
 
     deleteAll(event) {
@@ -164,4 +190,12 @@ export default class DataGenerator extends LightningElement {
             return false;
         }        
     }
+
+    get isCase() {
+        if (this.recordType === 'case') {
+            return true;
+        } else {
+            return false;
+        }        
+    }    
 }
