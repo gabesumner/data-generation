@@ -15,7 +15,7 @@ export default class DataGenerator extends LightningElement {
     @track minimumCasesToGenerate = 1;
     @track maximumCasesToGenerate = 5;    
     @track openmodel = false;
-    @track log = ""
+    @track log = "";
     error;
     subscription = {};
 

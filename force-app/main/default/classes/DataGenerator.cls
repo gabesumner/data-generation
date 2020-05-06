@@ -12,7 +12,7 @@ public with sharing class DataGenerator {
         List<Account> accounts = new List<Account>();
         Integer recordCount = 0;
 
-        while (recordCount < request.recordsToGenerate && recordCount < maxRecordsToProcessPerRequest) {
+        while (request.totalRecordsGenerated < request.recordsToGenerate && recordCount < maxRecordsToProcessPerRequest) {
             switch on request.subtype {
                 when 'consumer' {
                     accounts.add(createConsumerAccount(firstNames, lastNames, addresses));
