@@ -255,6 +255,7 @@ public with sharing class DataGenerator {
         account.NumberOfEmployees = getRandomNumberOfEmployees();
         account.AnnualRevenue = account.NumberOfEmployees * getRandomInt(20000, 200000);
         account.Ownership = getRandomString(new string[]{'Public', 'Public', 'Private', 'Private', 'Private', 'Private', 'Subsidiary', 'Subsidiary', 'Other'});
+        account.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));
         return account;
     }
 
@@ -273,7 +274,8 @@ public with sharing class DataGenerator {
         account.ShippingCity = address.get('city');
         account.ShippingState = address.get('state');
         account.ShippingPostalCode = address.get('postalcode');
-        account.ShippingCountry = address.get('country');            
+        account.ShippingCountry = address.get('country');    
+        account.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));        
         return account;
     }
 
@@ -316,6 +318,7 @@ public with sharing class DataGenerator {
         contact.Passport_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
         contact.Employee_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
         contact.Member_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
+        contact.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));
         return contact;
     }
 
@@ -323,14 +326,14 @@ public with sharing class DataGenerator {
         Case myCase = new Case();
         myCase.ContactId = contact.Id;
         myCase.AccountId = contact.AccountId;
+        myCase.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.today().addDays(-1));
         myCase.Origin = getRandomString(new string[]{'Email', 'Phone', 'Web'});
         myCase.Priority = getRandomString(new string[]{'High', 'Medium', 'Medium', 'Medium', 'Low', 'Low'});
         myCase.Type = getRandomString(new string[]{'Billing', 'Cancellation', 'Claim', 'Enrollment', 'Support', 'Other'});
         myCase.Reason = myCase.Type;
-        myCase.Status = getRandomString(new string[]{'New', 'New', 'New', 'Closed', 'Closed', 'Escalated'});
+        myCase.Status = getCaseStatus(myCase.CreatedDate);
         myCase.Subject = getCaseSubject(myCase.Type);
         myCase.Description = getCaseDescription(myCase.Type);
-        myCase.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));
         return myCase;
     }
 
@@ -361,6 +364,28 @@ public with sharing class DataGenerator {
 
     private static Boolean getRandomBoolean() {
         if (getRandomInt(0,1) == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public static Boolean getRandomBooleanByPercentChance(Integer percentChanceIsTrue) {
+        // Without doing anything there is a 50/50 chance of true/false. 
+        // Which means adding a percentChanceOfTrue will become 50+50, which is 100% of true.
+        // We need to subtract 50 to make it behave as expected.
+        // 0, becomes -50. Which is 100% false. 100 becomes 50, which becomes 100% true
+        Double weight = Double.valueOf(percentChanceIsTrue) - 50;
+        System.debug('weight: ' + weight);
+        Double seed = Math.random();
+        System.debug('seed: ' + seed);
+        seed = seed + (Double.valueOf(weight) / 100);
+        System.debug('seed: ' + seed);
+        if (seed > 1) { seed = 1; }
+        if (seed < 0) { seed = 0; }
+        Integer rand = Math.round(seed);
+
+        if (rand == 0) {
             return false;
         } else {
             return true;
@@ -476,9 +501,54 @@ public with sharing class DataGenerator {
                 companySuffix = getRandomString(new string[] {
                     'Biotechnology',
                     'Labs',
+                    'Science',
                     'Research'
                 });
-            }             
+            }
+            when 'Communications' {
+                companySuffix = getRandomString(new string[] {
+                    'Communications',
+                    'Media',
+                    'Publishing'
+                });
+            }
+            when 'Construction' {
+                companySuffix = getRandomString(new string[] {
+                    'Builders',
+                    'Construction',
+                    'Industrial'
+                });
+            }
+            when 'Education' {
+                companySuffix = getRandomString(new string[] {
+                    'Academics',
+                    'Education',
+                    'University',
+                    'Research'
+                });
+            }
+            when 'Electronics' {
+                companySuffix = getRandomString(new string[] {
+                    'Electronics',
+                    'Tech',
+                    'Digital',
+                    'Computers'
+                });
+            }
+            when 'Food & Beverage' {
+                companySuffix = getRandomString(new string[] {
+                    'Foods',
+                    'Benerage',
+                    'Foods & Beverage'
+                });
+            }
+            when 'Government' {
+                companySuffix = getRandomString(new string[] {
+                    'Township',
+                    'County',
+                    'Municipality'
+                });
+            }               
             when 'Not For Profit' {
                 companySuffix = getRandomString(new string[] {
                     'Foundation',
@@ -582,7 +652,7 @@ public with sharing class DataGenerator {
                 return 'I have claims question related to my account.';
             }
             when 'Enrollment' {
-                return 'I have an enrollment question related to my account..';
+                return 'I have an enrollment question related to my account.';
             }
             when 'Support' {
                 return 'I have a service question and would like some assistance.';
@@ -591,6 +661,25 @@ public with sharing class DataGenerator {
                 return 'I need some general assistance related to our account.';
             }
         }
+    }
+
+    public static String getCaseStatus(Datetime createdDate) {
+        Integer daysOld = createdDate.date().daysBetween(Date.today());
+        System.debug('daysOld: ' + daysOld);
+        Integer percentChanceIsClosed = daysOld;
+        System.debug('percentChanceIsClosed: ' + percentChanceIsClosed);
+        if (percentChanceIsClosed > 98) {
+            percentChanceIsClosed = 98;
+        }
+        System.debug('percentChanceIsClosed: ' + percentChanceIsClosed);
+
+        if (getRandomBooleanByPercentChance(percentChanceIsClosed) == true) {
+            System.debug('Closed by Percent');
+            return 'Closed';
+        }
+
+        String status = getRandomString(new string[]{'New', 'New', 'New', 'Closed', 'Closed', 'Escalated'});
+        return status;
     }
 
     public static Integer getRandomNumberOfEmployees() {
