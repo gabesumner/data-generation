@@ -1,15 +1,19 @@
 public with sharing class DataGenerator {
     @AuraEnabled
-    public static void generateAccounts(String accountType, Integer numberToGenerate) {
-        publishEvent('Generating ' + numberToGenerate + ' account records...');
+    public static DataGeneratorRequest generateAccounts(DataGeneratorRequest request) {
+
+        if (request.totalRecordsGenerated == 0) {
+            publishEvent('START: Generating ' + request.recordsToGenerate + ' accounts...');
+        }
 
         List<String> firstNames = getFirstNames();
         List<String> lastNames = getLastNames();
         List<String> addresses = getAddresses();
         List<Account> accounts = new List<Account>();
+        Integer recordCount = 0;
 
-        for (Integer i = 0; i < numberToGenerate; i++) {
-            switch on accountType {
+        while (recordCount < request.recordsToGenerate && recordCount < maxRecordsToProcessPerRequest) {
+            switch on request.subtype {
                 when 'consumer' {
                     accounts.add(createConsumerAccount(firstNames, lastNames, addresses));
                 }
@@ -25,82 +29,203 @@ public with sharing class DataGenerator {
                 }
             }
 
-            if (accounts.size() >= 100) {
-                insert accounts;
-                publishEvent('Generated ' + String.valueOf(i+1) + ' of ' + numberToGenerate + ' accounts.');
-                accounts.clear();
+            recordCount = recordCount + 1;
+            request.totalRecordsGenerated = request.totalRecordsGenerated + 1;
 
+            if (accounts.size() >= maxRecordsToProcessPerInsert) {
+                insert accounts;
+                publishEvent('Generated ' + request.totalRecordsGenerated + ' accounts.' );
+                accounts.clear();
             }
         }
+        insert accounts;
 
-        insert accounts;        
-        publishEvent('JOB FINISHED: ' + numberToGenerate + ' accounts were generated.');
+        if (request.totalRecordsGenerated >= request.recordsToGenerate) {
+            request.maxRecordsExceeded = false;
+            publishEvent('FINISH: Generated ' + request.totalRecordsGenerated + ' accounts.');
+        } else {
+            request.maxRecordsExceeded = true;
+        }
+
+        return request;
     }
 
     @AuraEnabled
-    public static void generateContactsForAccounts(Integer minimumToGenerate, Integer maximumToGenerate) {
-        publishEvent('Generating ' + minimumToGenerate + '-' + maximumToGenerate + ' contact records per account...');
+    public static DataGeneratorRequest generateContactsForAccounts(DataGeneratorRequest request) {
+        if (request.currentParent == 0 && request.totalRecordsGenerated == 0) {
+            publishEvent('START: Generating ' + request.minRecordsToGeneratePerParent + '-' + request.maxRecordsToGeneratePerParent + ' contacts for each account...');
+        }
 
         List<String> firstNames = getFirstNames();
         List<String> lastNames = getLastNames();
         List<String> addresses = getAddresses();
-        List<Account> accounts = [SELECT Id, Name, Phone, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry, NumberOfEmployees  FROM Account];
+        List<Account> accounts = [SELECT Id, Name, Phone, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry, NumberOfEmployees FROM Account LIMIT :maxRecordsToProcessPerRequest OFFSET :request.currentParent];
         List<Contact> contacts = new List<Contact>();
+        Integer parentCount = 0;
+        Integer recordCount = 0;
 
-        for (Integer accountCount = 0; accountCount < accounts.size(); accountCount++) {
-            Integer numberToGenerate = getRandomInt(minimumToGenerate, maximumToGenerate);
-            for (Integer contactCount = 0; contactCount < numberToGenerate; contactCount++) {
-                contacts.add(createContact(accounts[accountCount], firstNames, lastNames, addresses));
-                if (contacts.size() >= 100) {
+        while (parentCount < accounts.size() && recordCount < maxRecordsToProcessPerRequest) {
+
+            // We might be resuming processing of an existing request that was interupted due to single request limits.
+            if (parentCount != 0 || request.recordsToGenerateForCurrentParent == 0) {
+                request.recordsToGenerateForCurrentParent = getRandomInt(request.minRecordsToGeneratePerParent, request.maxRecordsToGeneratePerParent);
+                request.recordsGeneratedForCurrentParent = 0;
+            }
+
+            // Loop through each parent until we're finished OR until we encounter the maximum number of records we can process in a single request
+            while (request.recordsGeneratedForCurrentParent < request.recordsToGenerateForCurrentParent && recordCount < maxRecordsToProcessPerRequest) {
+                contacts.add(createContact(accounts[parentCount], firstNames, lastNames, addresses));
+                recordCount = recordCount + 1;
+                request.recordsGeneratedForCurrentParent = request.recordsGeneratedForCurrentParent + 1;
+                request.totalRecordsGenerated = request.totalRecordsGenerated + 1;
+                if (contacts.size() >= maxRecordsToProcessPerInsert) {
                     insert contacts;
-                    publishEvent('Processed ' + String.valueOf(accountCount+1) + ' of ' + accounts.size() + ' accounts.');
+                    publishEvent('Generated ' + request.totalRecordsGenerated + ' contact records for ' + String.valueOf(request.currentParent + 1) + ' accounts.' );
                     contacts.clear();
                 }
             }
-        }
 
+            // If we haven't yet inserted the maximum number of records OR we've successfully created all the required records for the CURRENT parent, then increment our counter variables.
+            if (contacts.size() < maxRecordsToProcessPerRequest || request.recordsGeneratedForCurrentParent >= request.recordsToGenerateForCurrentParent) {
+                parentCount = parentCount + 1;
+                request.currentParent = request.currentParent + 1;
+            }
+
+            // If we've generated the required number of records for the current parent, then reset the records required to generate.
+            if (request.recordsGeneratedForCurrentParent >= request.recordsToGenerateForCurrentParent ) {
+                request.recordsToGenerateForCurrentParent = 0;
+                request.recordsGeneratedForCurrentParent = 0;
+            }            
+        }
         insert(contacts);
-        publishEvent('JOB FINISHED: ' + minimumToGenerate + '-' + maximumToGenerate + ' contact records were generated for ' + accounts.size() + ' accounts.');
-    }
 
-    @AuraEnabled
-    public static void generateCasesForContacts(Integer minimumToGenerate, Integer maximumToGenerate) {
-        publishEvent('Generating ' + minimumToGenerate + '-' + maximumToGenerate + ' case records per contact...');
-        
-        List<Case> cases = new List<Case>();
-        List<Contact> contacts = [SELECT Id, AccountId FROM Contact];
-
-        for (Integer contactCount = 0; contactCount < contacts.size(); contactCount++) {
-            Integer numberToGenerate = getRandomInt(minimumToGenerate, maximumToGenerate);
-            for (Integer caseCount = 0; caseCount < numberToGenerate; caseCount++) {
-                cases.add(createCase(contacts[contactCount]));
-                if (cases.size() >= 100) {
-                    insert cases;
-                    publishEvent('Processed ' + String.valueOf(contactCount+1) + ' of ' + contacts.size() + ' contacts.');
-                    contacts.clear();
-                }
-            }
+        if (parentCount >= accounts.size() && request.currentParent < maxRecordsToProcessPerRequest) {
+            request.maxRecordsExceeded = false;
+            publishEvent('FINISH: Generated ' + request.totalRecordsGenerated + ' contacts for ' + request.currentParent + ' accounts.');
+        } else {
+            request.maxRecordsExceeded = true;
         }
 
-        insert(cases);
-        publishEvent('JOB FINISHED: ' + minimumToGenerate + '-' + maximumToGenerate + ' case records were generated for ' + contacts.size() + ' contacts.');
+        return request;
     }
 
     @AuraEnabled
-    public static void DeleteAll() {
-        publishEvent('Deleting ALL records...');
+    public static DataGeneratorRequest generateCasesForContacts(DataGeneratorRequest request) {
+        System.debug('generateCasesForContacts 1');
+        if (request.currentParent == 0 && request.totalRecordsGenerated == 0) {
+            publishEvent('START: Generating ' + request.minRecordsToGeneratePerParent + '-' + request.maxRecordsToGeneratePerParent + ' cases for each contact...');
+        }
 
-        List<Account> accounts = [SELECT Id FROM Account];
-        List<Contact> contacts = [SELECT Id FROM Contact];
-        List<Case> cases = [SELECT Id FROM Case];
-        List<Opportunity> opportunities = [SELECT Id FROM Opportunity];
-        
-        delete cases;
-        delete opportunities;
-        delete contacts;
-        delete accounts;
+        System.debug('generateCasesForContacts 2');
+        List<Case> cases = new List<Case>();
+        List<Contact> contacts = [SELECT Id, AccountId FROM Contact LIMIT :maxRecordsToProcessPerRequest OFFSET :request.currentParent];
+        Integer parentCount = 0;
+        Integer recordCount = 0;        
 
-        publishEvent('JOB FINISHED: All records have been deleted.');
+        System.debug('generateCasesForContacts 3');
+        while (parentCount < contacts.size() && recordCount < maxRecordsToProcessPerRequest) {
+
+            // We might be resuming processing of an existing request that was interupted due to single request limits.
+            if (parentCount != 0 || request.recordsToGenerateForCurrentParent == 0) {
+                request.recordsToGenerateForCurrentParent = getRandomInt(request.minRecordsToGeneratePerParent, request.maxRecordsToGeneratePerParent);
+                request.recordsGeneratedForCurrentParent = 0;
+            }
+
+            // Loop through each parent until we're finished OR until we encounter the maximum number of records we can process in a single request
+            while (request.recordsGeneratedForCurrentParent < request.recordsToGenerateForCurrentParent && recordCount < maxRecordsToProcessPerRequest) {
+                cases.add(createCase(contacts[parentCount]));
+                recordCount = recordCount + 1;
+                request.recordsGeneratedForCurrentParent = request.recordsGeneratedForCurrentParent + 1;
+                request.totalRecordsGenerated = request.totalRecordsGenerated + 1;
+                if (cases.size() >= maxRecordsToProcessPerInsert) {
+                    insert cases;
+                    publishEvent('Generated ' + request.totalRecordsGenerated + ' cases for ' + String.valueOf(request.currentParent + 1) + ' contacts.' );
+                    cases.clear();
+                }
+            }
+
+            // If we haven't yet inserted the maximum number of records OR we've successfully created all the required records for the CURRENT parent, then increment our counter variables.
+            if (cases.size() < maxRecordsToProcessPerRequest || request.recordsGeneratedForCurrentParent >= request.recordsToGenerateForCurrentParent) {
+                parentCount = parentCount + 1;
+                request.currentParent = request.currentParent + 1;
+            }
+
+            // If we've generated the required number of records for the current parent, then reset the records required to generate.
+            if (request.recordsGeneratedForCurrentParent >= request.recordsToGenerateForCurrentParent ) {
+                request.recordsToGenerateForCurrentParent = 0;
+                request.recordsGeneratedForCurrentParent = 0;
+            }            
+        }
+        insert(cases);
+
+        if (parentCount >= contacts.size() && request.currentParent < maxRecordsToProcessPerRequest) {
+            request.maxRecordsExceeded = false;
+            publishEvent('FINISH: Generated ' + request.totalRecordsGenerated + ' cases for ' + request.currentParent + ' contacts.');
+        } else {
+            request.maxRecordsExceeded = true;
+        }
+
+        return request;
+    }
+
+    @AuraEnabled
+    public static Boolean DeleteAll() {
+        Integer recordsDeleted = 0;
+        Integer numberOfRecords = 0;
+        Integer maxToDelete = 10000;
+
+        // Delete Opportunities
+        List<Opportunity> opportunities = [SELECT Id FROM Opportunity LIMIT :maxToDelete];
+        numberOfRecords = opportunities.size();
+        recordsDeleted = recordsDeleted + numberOfRecords;
+        if (numberOfRecords > 0) {
+            publishEvent('Deleting ' + numberOfRecords + ' opportunities...');
+            delete opportunities;
+            publishEvent(numberOfRecords + ' opportunities have been deleted.');
+        }
+
+        // Delete Cases
+        List<Case> cases = [SELECT Id FROM Case LIMIT :maxToDelete];
+        numberOfRecords = cases.size();
+        recordsDeleted = recordsDeleted + numberOfRecords;
+        if (recordsDeleted > maxToDelete) {
+            return false;
+        }
+        if (numberOfRecords > 0 && recordsDeleted < maxToDelete) {
+            publishEvent('Deleting ' + numberOfRecords + ' cases...');
+            delete cases;
+            publishEvent(numberOfRecords + ' cases have been deleted.');
+        } 
+
+        // Delete Contacts
+        List<Contact> contacts = [SELECT Id FROM Contact LIMIT :maxToDelete];
+        numberOfRecords = contacts.size();
+        recordsDeleted = recordsDeleted + numberOfRecords;
+        if (recordsDeleted > maxToDelete) {
+            return false;
+        }
+        if (numberOfRecords > 0 && recordsDeleted < maxToDelete) {
+            publishEvent('Deleting ' + numberOfRecords + ' contacts...');
+            delete contacts;
+            publishEvent(numberOfRecords + ' contacts have been deleted.');
+        }
+
+        // Delete Accounts
+        List<Account> accounts = [SELECT Id FROM Account LIMIT :maxToDelete];
+        numberOfRecords = accounts.size();
+        recordsDeleted = recordsDeleted + numberOfRecords;
+        if (recordsDeleted > maxToDelete) {
+            return false;
+        }        
+        if (numberOfRecords > 0 && recordsDeleted < maxToDelete) {
+            publishEvent('Deleting ' + numberOfRecords + ' accounts...');
+            delete accounts;
+            publishEvent(numberOfRecords + ' accounts have been deleted.');
+        }
+
+        publishEvent('FINISH: All records have been deleted.');
+
+        return true;
     }
 
     private static Account createBusinessAccount(List<String> lastNames, List<String> addresses) {
@@ -170,6 +295,7 @@ public with sharing class DataGenerator {
             contact.LastName =  getRandomName(lastNames);
             contact.Phone = '(555) ' + String.valueOf(getRandomInt(111, 999)) + '-' + String.valueOf(getRandomInt(1111, 9999));
         }
+        
         contact.Email = contact.FirstName.toLowerCase() + '.' + contact.LastName.toLowerCase() + '@example.com';
         contact.AccountId = account.Id;
         contact.HomePhone = '(555) ' + String.valueOf(getRandomInt(111, 999)) + '-' + String.valueOf(getRandomInt(1111, 9999));
@@ -204,6 +330,7 @@ public with sharing class DataGenerator {
         myCase.Status = getRandomString(new string[]{'New', 'New', 'New', 'Closed', 'Closed', 'Escalated'});
         myCase.Subject = getCaseSubject(myCase.Type);
         myCase.Description = getCaseDescription(myCase.Type);
+        myCase.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));
         return myCase;
     }
 
@@ -244,15 +371,32 @@ public with sharing class DataGenerator {
         return Strings[getRandomInt(0, Strings.size()-1)];
     }
 
-    private static Date getRandomDate(Date min, Date max) {
-        // Convert to DateTime values
-        DateTime mint = min, maxt = max.addDays(1);
-        // Then convert to milliseconds since Jan 1, 1970, and get difference in ms
-        Long minms = mint.getTime(), maxms = maxt.getTime(), diff = maxms - minms;
-        // Return a date between minms and maxms.
-        return DateTime.newInstance(
-            minms + Math.mod(Math.abs(Crypto.getRandomLong()), diff)
-        ).date();
+    private static Date getRandomDate(Date minDate, Date maxDate) {
+        return getRandomDateTime(minDate, maxDate).date();
+    }
+
+    private static DateTime getRandomDateTime(Date minDate, Date maxDate) {
+        Integer rangeSize = minDate.daysBetween(maxDate) + 1;
+        Decimal daysToAdd = rangeSize * math.Random();
+        DateTime result = DateTime.newInstance(
+            minDate.year(),
+            minDate.month(),
+            minDate.day(),
+            getRandomInt(6, 19),
+            getRandomInt(0, 59),
+            getRandomInt(0, 59)
+        );
+        result = result.addDays(daysToAdd.intValue());
+        return result;
+    }
+    
+    private static DateTime getTrendingDateTime(Date minDate, Date maxDate) {
+        DateTime result = getRandomDateTime(minDate, maxDate);
+        System.debug('getTrendingDateTime Original: ' + result.format());
+        Integer rangeSize = result.date().daysBetween(maxDate) + 1;
+        result = result.addDays(getRandomInt(0, rangeSize));
+        System.debug('getTrendingDateTime Trending: ' + result.format());
+        return result;
     }
 
     private static String getRandomName(List<String> names) {
@@ -304,7 +448,7 @@ public with sharing class DataGenerator {
             'Regional',
             'First'
         });
-    }    
+    }
 
     private static String getRandomCompanySuffix(string companySuffix) {
         switch on companySuffix {
@@ -357,22 +501,71 @@ public with sharing class DataGenerator {
     private static String getCaseSubject(string caseType) {
         switch on caseType {
             when 'Billing' {
-                return 'Question about my bill';
+                String word = getRandomString(new string[] {
+                    'bill',
+                    'invoice',
+                    'service',
+                    'policy',
+                    'order',
+                    'contract',
+                    'subscription'
+                });
+                return getRandomString(new string[] {
+                    'Questions about my ' + word,
+                    'My ' + word,
+                    word.capitalize() + ' question',
+                    'Need help with my ' + word
+                });
             }
             when 'Cancellation' {
-                return 'Cancel my service';
+                String word = getRandomString(new string[] {
+                    'order',
+                    'subscription',
+                    'contract',
+                    'service',
+                    'policy'
+                });                
+                return getRandomString(new string[] {
+                    word.capitalize() + ' cancellation',
+                    'Cancel my ' + word,
+                    'Please cancel my ' + word,
+                    'Need to cancel my ' + word
+                });
             }
             when 'Claim' {
-                return 'File a new claim';
+                return getRandomString(new string[] {
+                    'Question about my claim',
+                    'Status of claim',
+                    'Need copy of my claim'
+                });
             }
-            when 'Encrollment' {
-                return 'Enroll for service';
+            when 'Enrollment' {
+                return getRandomString(new string[] {
+                    'Enrollment dates',
+                    'Need to enroll',
+                    'Status of enrollment',
+                    'Enrollment question',
+                    'Question about enrollment process'
+                });
             }
             when 'Support' {
-                return 'Problems using service';
+                return getRandomString(new string[] {
+                    'Setup question',
+                    'Need help with configuration',
+                    'Setup problem',
+                    'Warranty question',
+                    'Schedule warranty service',
+                    'Question about message'
+                });
             }
             when else {
-                return 'Transfer service';
+                return getRandomString(new string[] {
+                    'Transfer service',
+                    'Need assistance',
+                    'General question',
+                    'Can\'t find information',
+                    'Please contact me'
+                });
             }
         }
     }
@@ -380,22 +573,22 @@ public with sharing class DataGenerator {
     private static String getCaseDescription(string caseType) {
         switch on caseType {
             when 'Billing' {
-                return 'I received my latest billing invoice and have questions about 1 of the line items.';
+                return 'I have a billing question related to my account.';
             }
             when 'Cancellation' {
-                return 'I\'m moving and will no longer need my service and need assistant to cancel.';
+                return 'I need to cancel our account.';
             }
             when 'Claim' {
-                return 'I\'d like to file a new claim and have some questions about the information required.';
+                return 'I have claims question related to my account.';
             }
-            when 'Encrollment' {
-                return 'I need to enroll for service and would like to activate next week.';
+            when 'Enrollment' {
+                return 'I have an enrollment question related to my account..';
             }
             when 'Support' {
-                return 'I\'m having difficult using the service and would like some assistant.';
+                return 'I have a service question and would like some assistance.';
             }
             when else {
-                return 'I need help transferring my service to another account.';
+                return 'I need some general assistance related to our account.';
             }
         }
     }
@@ -457,4 +650,12 @@ public with sharing class DataGenerator {
             System.debug('Successfully published event.');
         }
     }
+
+    private static Integer maxRecordsToProcessPerRequest {
+        get { return 1000; }
+    }
+
+    private static Integer maxRecordsToProcessPerInsert {
+        get { return 100; }
+    }   
 }

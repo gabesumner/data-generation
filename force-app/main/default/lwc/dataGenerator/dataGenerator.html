@@ -5,7 +5,7 @@
             <lightning-card title="GENERATE" icon-name="utility:database">
                 <div class="slds-p-horizontal_medium">
                     <div class="slds-p-bottom_x-small">
-                        <lightning-combobox label="What type of records?" options={recordTypeOptions} value={recordType} onchange={handleRecordTypeChange}></lightning-combobox>
+                        <lightning-combobox label="What type of records do you want to generate?" options={recordTypeOptions} value={recordType} onchange={handleRecordTypeChange}></lightning-combobox>
                     </div>
                     <template if:true={isAccount}>
                         <div class="slds-p-bottom_x-small">
@@ -25,11 +25,19 @@
                     </template>
                     <template if:true={isCase}>
                         <div class="slds-p-bottom_x-small">
-                            <lightning-input type="number" label="Minimum number of cases to generate per contact?" value={minimumCasesToGenerate} onchange={handleMinimumCasesToGenerate}></lightning-input>
+                            <lightning-input type="number" label="Minimum number of cases to generate per contact:" value={minimumCasesToGenerate} onchange={handleMinimumCasesToGenerate}></lightning-input>
                         </div>
                         <div class="slds-p-bottom_x-small">
-                            <lightning-input type="number" label="Maximum number of cases to generate per contact?" value={maximumCasesToGenerate} onchange={handleMaximumCasesToGenerate}></lightning-input>
-                        </div>                        
+                            <lightning-input type="number" label="Maximum number of cases to generate per contact:" value={maximumCasesToGenerate} onchange={handleMaximumCasesToGenerate}></lightning-input>
+                        </div>
+                        <!--
+                        <div class="slds-p-bottom_x-small">
+                            <lightning-input type="date" label="Earliest date for cases:" value="2019-01-01"></lightning-input>
+                        </div>
+                        <div class="slds-p-bottom_x-small">
+                            <lightning-input type="date" label="Latest date for cases:" value="2020-01-01"></lightning-input>
+                        </div>
+                        -->
                     </template>                    
                     <div class="slds-p-top_small">
                         <span class="slds-p-right_x-small"><lightning-button label="Generate Records" icon-name="utility:database" onclick={handleGenerateRecords}></lightning-button></span>

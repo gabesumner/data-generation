@@ -7,7 +7,6 @@ import callDeleteAll from '@salesforce/apex/DataGenerator.DeleteAll';
 
 export default class DataGenerator extends LightningElement {
     @track accountsToGenerate = 5;
-    @track contactsToGenerate = '1-10';
     @track casesToGenerate = '1-10';
     @track recordType = 'account';
     @track accountType = 'consumer';
@@ -62,75 +61,103 @@ export default class DataGenerator extends LightningElement {
 
     handleMaximumCasesToGenerate(event) {
         this.maximumCasesToGenerate = event.detail.value;
-    }    
-
+    }
+    
     handleGenerateRecords(event) {
         this.openmodal();
-        this.addToLog('JOB STARTED (be patient)');
 
         switch(this.recordType) {
             case 'account':
-                this.generateAccounts();
+                var request = {
+                    'subType': this.accountType,
+                    'recordsToGenerate': this.accountsToGenerate
+                }
+                this.generateAccounts(request);
                 break;
             case 'contact':
-                this.generateContactsForAccounts();
+                var request = {
+                    'minRecordsToGeneratePerParent': this.minimumContactsToGenerate,
+                    'maxRecordsToGeneratePerParent': this.maximumContactsToGenerate
+                }
+                this.generateContactsForAccounts(request);
                 break;
             case 'case':
-                this.generateCasesForContacts();
+                var request = {
+                    'minRecordsToGeneratePerParent': this.minimumCasesToGenerate,
+                    'maxRecordsToGeneratePerParent': this.maximumCasesToGenerate
+                }
+                this.generateCasesForContacts(request);
                 break;
         }
 
     }
 
-    generateAccounts() {
+    generateAccounts(request) {
         callGenerateAccounts({
-            accountType: this.accountType,
-            numberToGenerate: this.accountsToGenerate
+            request: request
         })
         .then(result => {
-            console.log('Results: ' + JSON.stringify(result));
+            console.log(JSON.stringify(result));
+
+            request = result;
+            console.log('result: ' + request.totalRecordsGenerated + ':' + request.recordsToGenerate);
+            if (request.totalRecordsGenerated < request.recordsToGenerate) {
+                this.generateAccounts(request);
+            }
         })
         .catch(error => {
-            console.log('Error: ' + JSON.stringify(error));
+            this.addToLog('ERROR: ' + JSON.stringify(error));
             this.error = error;
         });
     }
 
-    generateContactsForAccounts() {
+    generateContactsForAccounts(request) {
         callGenerateContactsForAccounts({
-            minimumToGenerate: this.minimumContactsToGenerate,
-            maximumToGenerate: this.maximumContactsToGenerate
+            request: request
         })
         .then(result => {
-            console.log('Results: ' + JSON.stringify(result));
+            console.log(JSON.stringify(result));
+            request = result;
+            console.log('result: ' + request.totalRecordsGenerated + ':' + request.recordsToGenerate);
+            if (request.maxRecordsExceeded == true) {
+                this.generateContactsForAccounts(request);
+            }
         })
         .catch(error => {
-            console.log('Error: ' + JSON.stringify(error));
+            console.log('ERROR: ' + JSON.stringify(error));
+            this.addToLog('ERROR: ' + error.body.message);
             this.error = error;
         });
     }
 
-    generateCasesForContacts() {
+    generateCasesForContacts(request) {
         callGenerateCasesForContacts({
-            minimumToGenerate: this.minimumContactsToGenerate,
-            maximumToGenerate: this.maximumContactsToGenerate
+            request: request
         })
         .then(result => {
-            console.log('Results: ' + JSON.stringify(result));
+            console.log(JSON.stringify(result));
+            request = result;
+            console.log('result: ' + request.totalRecordsGenerated + ':' + request.recordsToGenerate);
+            if (request.maxRecordsExceeded == true) {
+                this.generateCasesForContacts(request);
+            }
         })
         .catch(error => {
-            console.log('Error: ' + JSON.stringify(error));
+            console.log('ERROR: ' + JSON.stringify(error));
+            this.addToLog('ERROR: ' + error.body.message);
             this.error = error;
-        });        
+        });      
     }
 
     deleteAll(event) {
         this.openmodal();
-        this.addToLog('JOB STARTED (be patient)');
+        this.addToLog('START: Deleting ALL records.');
 
         callDeleteAll({})
         .then(result => {
-            console.log('Results: ' + JSON.stringify(result));
+            if (result == false) {
+                this.deleteAll();
+            }
         })
         .catch(error => {
             console.log('Error: ' + JSON.stringify(error));
