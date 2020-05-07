@@ -99,7 +99,7 @@ public with sharing class DataGenerator {
         }
         insert(contacts);
 
-        if (parentCount >= accounts.size() && request.currentParent < maxRecordsToProcessPerRequest) {
+        if (parentCount >= accounts.size() && recordCount < maxRecordsToProcessPerRequest) {
             request.maxRecordsExceeded = false;
             publishEvent('FINISH: Generated ' + request.totalRecordsGenerated + ' contacts for ' + request.currentParent + ' accounts.');
         } else {
@@ -158,7 +158,7 @@ public with sharing class DataGenerator {
         }
         insert(cases);
 
-        if (parentCount >= contacts.size() && request.currentParent < maxRecordsToProcessPerRequest) {
+        if (parentCount >= contacts.size() && recordCount < maxRecordsToProcessPerRequest) {
             request.maxRecordsExceeded = false;
             publishEvent('FINISH: Generated ' + request.totalRecordsGenerated + ' cases for ' + request.currentParent + ' contacts.');
         } else {
@@ -318,7 +318,7 @@ public with sharing class DataGenerator {
         contact.Passport_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
         contact.Employee_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
         contact.Member_ID__c = '000' + String.valueOf(getRandomInt(111111111, 999999999));
-        contact.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.newInstance(2019, 12, 31));
+        contact.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.today().addDays(-2));
         return contact;
     }
 
@@ -326,7 +326,7 @@ public with sharing class DataGenerator {
         Case myCase = new Case();
         myCase.ContactId = contact.Id;
         myCase.AccountId = contact.AccountId;
-        myCase.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.today().addDays(-1));
+        myCase.CreatedDate = getTrendingDateTime(Date.newInstance(2000, 1, 1), Date.today().addDays(-2));
         myCase.Origin = getRandomString(new string[]{'Email', 'Phone', 'Web'});
         myCase.Priority = getRandomString(new string[]{'High', 'Medium', 'Medium', 'Medium', 'Low', 'Low'});
         myCase.Type = getRandomString(new string[]{'Billing', 'Cancellation', 'Claim', 'Enrollment', 'Support', 'Other'});

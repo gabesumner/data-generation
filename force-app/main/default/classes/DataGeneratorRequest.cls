@@ -69,15 +69,4 @@ public with sharing class DataGeneratorRequest {
         set { maxRecordsExceeded = value; }
 
     }
-
-/*
-    'recordsToGenerate': 0,
-    'minRecordsToGeneratePerParent': 0,
-    'maxRecordsToGeneratePerParent': 0,
-    'currentParent': 0,
-    'totalParents': 50000,
-    'recordsToGenerateForCurrentParent': 0,
-    'recordsGeneratedForCurrentParent': 0,
-    'totalRecordsGenerated': 0,    
-*/
 }
