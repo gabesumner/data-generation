@@ -332,6 +332,13 @@ public with sharing class DataGenerator {
         myCase.Type = getRandomString(new string[]{'Billing', 'Cancellation', 'Claim', 'Enrollment', 'Support', 'Other'});
         myCase.Reason = myCase.Type;
         myCase.Status = getCaseStatus(myCase.CreatedDate);
+        if (myCase.Status == 'Closed') {
+            myCase.ClosedDate = myCase.CreatedDate.addDays(getRandomInt(1, 30));
+            if (myCase.ClosedDate > Date.today().addDays(-2)) {
+                myCase.ClosedDate = Date.today().addDays(-2);
+            }
+            myCase.LastModifiedDate = myCase.ClosedDate;
+        }
         myCase.Subject = getCaseSubject(myCase.Type);
         myCase.Description = getCaseDescription(myCase.Type);
         return myCase;
