@@ -8,32 +8,30 @@
             <axisBinding>y</axisBinding>
             <column>RowCount</column>
         </chartSummaries>
-        <chartType>Donut</chartType>
+        <chartType>VerticalColumn</chartType>
         <enableHoverLabels>false</enableHoverLabels>
-        <expandOthers>false</expandOthers>
-        <groupingColumn>STATUS</groupingColumn>
-        <legendPosition>Right</legendPosition>
+        <expandOthers>true</expandOthers>
+        <groupingColumn>CREATED_DATE</groupingColumn>
         <location>CHART_BOTTOM</location>
-        <showAxisLabels>false</showAxisLabels>
+        <showAxisLabels>true</showAxisLabels>
         <showPercentage>false</showPercentage>
-        <showTotal>true</showTotal>
+        <showTotal>false</showTotal>
         <showValues>false</showValues>
         <size>Medium</size>
         <summaryAxisRange>Auto</summaryAxisRange>
         <textColor>#000000</textColor>
         <textSize>12</textSize>
-        <title>Case Status (last 30 days)</title>
         <titleColor>#000000</titleColor>
         <titleSize>18</titleSize>
     </chart>
+    <columns>
+        <field>OWNER</field>
+    </columns>
     <columns>
         <field>ACCOUNT.NAME</field>
     </columns>
     <columns>
         <field>SUBJECT</field>
-    </columns>
-    <columns>
-        <field>CREATED_DATE</field>
     </columns>
     <columns>
         <field>AGE</field>
@@ -46,14 +44,14 @@
     </columns>
     <format>Summary</format>
     <groupingsDown>
-        <dateGranularity>Day</dateGranularity>
-        <field>STATUS</field>
+        <dateGranularity>Year</dateGranularity>
+        <field>CREATED_DATE</field>
         <sortOrder>Asc</sortOrder>
     </groupingsDown>
-    <name>Case Status (last 30 days)</name>
+    <name>Cases Trends</name>
     <params>
         <name>units</name>
-        <value>h</value>
+        <value>d</value>
     </params>
     <params>
         <name>co</name>
@@ -66,6 +64,6 @@
     <showSubTotals>true</showSubTotals>
     <timeFrameFilter>
         <dateColumn>CREATED_DATEONLY</dateColumn>
-        <interval>INTERVAL_LAST30</interval>
+        <interval>INTERVAL_CUSTOM</interval>
     </timeFrameFilter>
 </Report>

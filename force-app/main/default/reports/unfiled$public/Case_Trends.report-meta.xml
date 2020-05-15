@@ -8,30 +8,32 @@
             <axisBinding>y</axisBinding>
             <column>RowCount</column>
         </chartSummaries>
-        <chartType>VerticalColumn</chartType>
+        <chartType>Donut</chartType>
         <enableHoverLabels>false</enableHoverLabels>
-        <expandOthers>true</expandOthers>
-        <groupingColumn>CREATED_DATE</groupingColumn>
+        <expandOthers>false</expandOthers>
+        <groupingColumn>STATUS</groupingColumn>
+        <legendPosition>Right</legendPosition>
         <location>CHART_BOTTOM</location>
-        <showAxisLabels>true</showAxisLabels>
+        <showAxisLabels>false</showAxisLabels>
         <showPercentage>false</showPercentage>
-        <showTotal>false</showTotal>
+        <showTotal>true</showTotal>
         <showValues>false</showValues>
         <size>Medium</size>
         <summaryAxisRange>Auto</summaryAxisRange>
         <textColor>#000000</textColor>
         <textSize>12</textSize>
+        <title>Case Status (last 30 days)</title>
         <titleColor>#000000</titleColor>
         <titleSize>18</titleSize>
     </chart>
-    <columns>
-        <field>OWNER</field>
-    </columns>
     <columns>
         <field>ACCOUNT.NAME</field>
     </columns>
     <columns>
         <field>SUBJECT</field>
+    </columns>
+    <columns>
+        <field>CREATED_DATE</field>
     </columns>
     <columns>
         <field>AGE</field>
@@ -44,14 +46,14 @@
     </columns>
     <format>Summary</format>
     <groupingsDown>
-        <dateGranularity>Year</dateGranularity>
-        <field>CREATED_DATE</field>
+        <dateGranularity>Day</dateGranularity>
+        <field>STATUS</field>
         <sortOrder>Asc</sortOrder>
     </groupingsDown>
-    <name>Cases Report</name>
+    <name>Case Status</name>
     <params>
         <name>units</name>
-        <value>d</value>
+        <value>h</value>
     </params>
     <params>
         <name>co</name>

@@ -335,7 +335,7 @@ public with sharing class DataGenerator {
         if (myCase.Status == 'Closed') {
             myCase.ClosedDate = myCase.CreatedDate.addDays(getRandomInt(1, 30));
             if (myCase.ClosedDate > Date.today().addDays(-2)) {
-                myCase.ClosedDate = Date.today().addDays(-2);
+                myCase.ClosedDate = myCase.CreatedDate;
             }
             myCase.LastModifiedDate = myCase.ClosedDate;
         }
